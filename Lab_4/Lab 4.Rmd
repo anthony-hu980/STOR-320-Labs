@@ -1,0 +1,138 @@
+---
+title: 'Lab 4: Control Structures and Function'
+author: "Anthony Hu"
+date: "June 11, 2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+# This is a good place to put libraries required for using the ggplot function
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+library(Ecdat)
+```
+
+# Introduction
+
+The main purpose of this lab is to practice control structures in R:
+
+- `if` and `else`: testing a condition and acting on it
+- `for`: execute a loop a fixed number of times
+- `while`: execute a loop while a condition is true
+
+You will need to modify the code chunks so that the code works within each of chunk (usually this means modifying anything in ALL CAPS). You will also need to modify the code outside the code chunk. When you get the desired result for each step, change `Eval=F` to `Eval=T` and knit the document to HTML to make sure it works. After you complete the lab, you should submit your HTML file of what you have completed to Sakai before the deadline.
+
+# Part 1: Vector and Control Structures
+
+a) (2 points) Write code that creates a vector `x` that contains `100` random observations from the standard normal distribution (this is the normal distribution with the mean equal to `0` and the variance equal to `1`).
+
+```{r}
+#
+x <- rnorm(100, mean = 0, sd = 1)
+x
+length(x)
+```
+
+b) (2 points) Write code that replaces the observations in the vector `x` that are greater than or equal to `0` with a string of characters `"non-negative"` and the observations that are smaller than `0` with a string of characters `"negative"`. Hint: try `ifelse()` funtion.
+
+```{r}
+#
+a <- ifelse(x >= 0, "non-negative", "negative")
+a
+```
+
+c) (2 points) Write `for`-Loop to count how many observations in the vector `x` are non-negative and how many observations are negative. (There are many easier ways to solve this problem. Please use `for`-Loop to practice the things learned in the lecture.)
+
+```{r}
+#
+num_non_nega = 0
+num_negative = 0
+for(b in a){
+  if(b == "negative"){
+    num_negative = num_negative + 1
+  }
+  else{
+    num_non_nega = 1 + num_non_nega
+  }
+}
+num_non_nega
+num_negative
+```
+
+# Part 2: Matrix and Control Structures
+a) (4 points) Create a $100000$ by $10$ matrix `A` with the numbers $1:1000000$. Create a `for`-loop that calculates the sum for each row of the matrix and save the results to a vector `sum_row`. (Don't print the whole matrix in your submission as the matrix is very large. Otherwise, you'll lose scores for it.)
+```{r}
+#
+A <- matrix(1:1000000, nrow = 100000, ncol = 10)
+sum_row <- vector()
+for(y in 1:100000){
+  sum_row[y] <- sum(A[y,])
+}
+head(sum_row, 10)
+```
+
+Verify that your results are consistent with what you obtain with the built-in `rowSums` function. 
+```{r,eval=F}
+sum_row_rowSums = as.integer(rowSums(A))
+head(sum_row_rowSums)
+```
+
+b) (4 points) Another common loop structure that is used is the `while` loop, which functions much like a `for` loop, but will only run as long as a test condition is `TRUE`. Modify your `for` loop from exercise (a) and make it into a `while` loop. Write code to check if the results from `for` loop are the same as the results from `while` loop.
+```{r}
+#
+sum_row_2 <- vector()
+y = 0
+while(y < 100001){
+  sum_row_2[y] <- sum(A[y,])
+  y = y + 1
+}
+head(sum_row_2, 10)
+```
+
+# Part 3: Simulation Study
+Suppose that $X_1,\ldots,X_n$ are independent and identically distributed (iid) binomial random variables such that
+\[
+  P(X_i=x\mid k,p)
+  ={k\choose x}p^x(1-p)^{k-x},\quad x=0,1,\ldots,k
+\]
+for all $i=1,\ldots,n$. Assume that both $k$ and $p$ are unknown and use the method of moments to obtain point estimators of both parameters. This somewhat unusual application of the binomial model has
+been used to estimate crime rates for crimes that are known to have many unreported
+occurrences. For such a crime, both the true reporting rate, $p$, and the total number
+of occurrences, $k$, are unknown. Equating the first two sample moments to those of the population yields the system
+of equations
+\[
+  \bar X=kp
+  \quad\text{and}\quad
+  \frac1n\sum_{i=1}^nX_i^2=kp(1-p)+k^2p^2,
+\]
+where $\bar X$ is the sample mean. Solving for $k$ and $p$ leads to
+\[
+  \hat k=\frac{\bar X^2}{\bar X-(1/n)\sum_{i=1}^n(X_i-\bar X)^2}
+  \quad\text{and}\quad
+  \hat p=\frac{\bar X}{\hat k}.
+\]
+It is difficult to analyze the performance of $\hat k$ and $\hat p$ analytically so you are asked to perform a simulation study using `R`. The idea is to generate random samples and investigate the performance of $\hat k$ and $\hat p$ using random samples.
+
+### Q1
+1. Generate a single simple random sample vector `x` of length `n = 50` from the binomial distribution with the parameters `k = 10`, `p = 0.4`. (1 point)
+```{r}
+k = 10
+p = 0.4
+x = rbinom(50,k,p)
+x
+```
+
+### Q2
+2. Write a function that takes a sample vector as its input and returns the estimates of `k` and `p` given above. (4 points)
+```{r}
+est_kp = function(x){
+  X_bar = mean(x)
+  n = length(x)
+  k_hat = (X_bar ^ 2) / (X_bar - var(x))
+  p_hat = X_bar / k_hat
+  return(c(k_hat,p_hat))
+}
+est_kp(x)
+```

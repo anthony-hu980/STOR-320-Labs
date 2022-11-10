@@ -1,0 +1,100 @@
+---
+title: 'Lab 2: Basic Data Transformation'
+author: "Anthony Hu"
+date: "May 28, 2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r , include=FALSE}
+# This is a good place to put libraries required for using the ggplot function
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+library(tidyverse) #Loads the dplyr package for data manipulation
+library(usmap)
+```
+
+# Introduction
+
+The task is to explore the US census population estimates by county for 2015 from the package `usmap`. The data frame (`countypop`) has `3142` rows and `4` variables: 
+
+- `fips` is the 5-digit FIPS code corresponding to the county; 
+
+- `abbr` is the 2-letter state abbreviation; `county` is the full county name;
+
+- `pop_2015` is the 2015 population estimate (in number of people) for the corresponding county. 
+
+Each row of the data frame represents a different county or a county equivalent. For the sake of simplicity, when we say a county, that also includes a county equivalent and when we say a state, that also includes the District of Columbia. Answer the following questions.
+
+You will need to modify the code chunks so that the code works within each of chunk (usually this means modifying anything in ALL CAPS). You will also need to modify the code outside the code chunk. When you get the desired result for each step, change `Eval=F` to `Eval=T` and knit the document to HTML to make sure it works. After you complete the lab, you should submit your HTML or PDF file of what you have completed to Sakai before the deadline.
+
+# Excercises
+
+```{r}
+?countypop
+countypop
+```
+## Part 1: Length and Unique
+
+a. How many unique 2-letter state abbreviations are there (2 point)? Use `length` and `unique` functions.
+```{r}
+length(unique(countypop$abbr))
+```
+
+ 51 states(including DC)
+ 
+b. What is the total number of counties in the US (2 point)? Use `length` and `unique` functions.
+```{r}
+length(unique(countypop$fips))
+```
+  3142 tota number of counties in US
+  
+  
+c. How many unique county names are there (2 point)? Use `length` and `unique` functions.
+```{r}
+length(unique(countypop$county))
+```
+  1877 unique county names
+
+## Part 2: Count and Arrange
+
+d. What are the top 10 most common county names (2 points)? `count` number of different county names, `arrange` in descending order and show the first 10 observations.
+```{r}
+countypop %>%
+  count(county) %>%
+  arrange(desc(n)) %>%
+  head(10)
+```
+  
+
+
+e. Which state has the smallest number of counties (2 points)? `count` number of observations in each state, `arrange` the data in ascending order and show the first observation.
+
+```{r}
+countypop %>%
+  count(abbr) %>%
+  arrange(n) %>%
+  head(1)
+```
+
+  DC is the state with the smallest number of counties, with 1 county.
+
+## Part 3 Group_by and Summarize
+
+f. How many people live in each of the states (2 points)?  Group the observation by the variable that serves as state identifier then summarize the data to get total number of people in each state.
+```{r}
+countypop %>%
+  group_by(abbr) %>%
+  summarise(total_pop=sum(pop_2015))
+```
+  
+g. What is the average population of a county in North Carolina (2 points)? `filter` the data to keep observations from 'NC', `summarise` the data to get average population.
+
+```{r}
+countypop %>%
+  filter(abbr=="NC") %>%
+  summarise(mean(pop_2015))
+```
+
+  Average population of a county in North Carolina is 100428 people. 

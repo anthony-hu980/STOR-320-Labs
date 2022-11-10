@@ -1,0 +1,93 @@
+---
+title: 'Lab 1: Data Visualization'
+author: "Anthony Hu"
+date: "May 20, 2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r , include=FALSE}
+# This is a good place to put libraries required for using the ggplot function
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+library(tidyverse) #Loads the ggplot2 package for visualization
+```
+
+# Introduction
+
+**Please refer to the first and second tutorial covered yesterday, when you solve these problems. Good luck and enjoy!**  
+
+`ggplot2` is a system for declaratively creating graphics, based on [The Grammar of Graphics](https://www.springer.com/it/book/9780387245447). You provide the data, tell ggplot2 how to map variables to aesthetics, what graphical primitives to use, and it takes care of the details.
+
+- `ggplot()` is used to construct the initial plot object, and is almost always followed by + to add component to the plot; 
+
+- `geom_TYPE` is the geometrical object that a plot uses to represent data;
+
+- `aes(x, y, ...)` aesthetic mappings describe how variables in the data are mapped to visual properties (aesthetics) of geoms. Aesthetic mappings can be set in `ggplot()` and in individual layers. 
+
+- `facet` is another way to add additional variables, particularly useful for categorical variables. They split your plot into facets, subplots that each display one subset of the data.
+
+This lab assignment is based on `mpg` data from `ggplot2` package. This dataset contains a subset of the fuel economy data that the EPA makes available on http://fueleconomy.gov. Each row of the data frame represents a different car model and. There are 234 rows and 11 variables in the dataset. You can type `?mpg` in the console to check details of the dataset.
+
+You will need to modify the code chunks so that the code works within each of chunk (usually this means modifying anything in ALL CAPS). You will also need to modify the code outside the code chunk. When you get the desired result for each step, change `Eval=F` to `Eval=T` and knit the document to PDF to make sure it works. After you complete the lab, you should submit your PDF file of what you have completed before the deadline. For those who cannot knit to PDF, please knit to HTML then print HTML to PDF with your internet browser.
+
+# Excercises
+
+## Part 1: Basic Plot
+
+a. Use scatterplot to visualize the relationship between `displ`(engine displacement) and `hwy` (highway miles per gallon) from `mpg` with `displ` on x-axis and `hwy` on y-axis.
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy))
+```
+
+b. Add a smooth curve to the previous scatterplot with linear regression (`lm`) as smoothing method.
+```{r}
+ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy)) +
+	geom_smooth(aes(x = displ, y = hwy), method = lm)
+```
+
+c. Generate the same plot as in (b) but specify the aesthetic mappings in `ggplot()` function. Is there any difference between plot (c) and plot (b)?
+```{r}
+ggplot(data = mpg,aes(x = displ, y = hwy)) +
+  geom_point() +
+	geom_smooth(method = lm)
+```
+ANSWER: No difference
+
+d. Generate the same plot as in (b) but the color of scatterplot points are controlled by `class` (type of car) in `mpg`.
+```{r}
+ggplot(data = mpg) +
+	geom_point(aes(x=displ,y=hwy,color=class)) +
+  geom_smooth(aes(x = displ, y = hwy), method = lm)
+```
+
+## Part 2: Advacned Plot
+
+e. Use `facet_wrap` to visualize the relationship between `displ` and `hwy` based on `class`. 
+```{r}
+ggplot(data = mpg) +
+	geom_point(aes(x = displ, y = hwy)) +
+	facet_wrap(class~., nrow=2)
+```
+
+f. Compare the following plot with the plot in (a), what is the difference? 
+```{r}
+ggplot(data = mpg) + 
+	geom_point(aes(x = displ, y = hwy), position = "jitter")
+?geom_point
+```
+ANSWER: The points have small amount of random variation to location of each point. 
+g. Generate boxplot of `hwy` based on `class`.
+```{r}
+ggplot(data = mpg) + 
+	geom_boxplot(aes(x = class, y = hwy))
+```
+Flip the coordinates of the boxplot with `coord_flip()`.
+```{r}
+ggplot(data = mpg) + 
+	geom_boxplot(aes(x = class, y = hwy)) +
+  coord_flip()
+```

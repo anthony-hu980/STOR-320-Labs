@@ -1,0 +1,137 @@
+---
+title: "Analyses 4 (Lab 5)"
+author: "Anthony Hu"
+date: "06/22/2021"
+output:
+  pdf_document: default
+  html_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# IN THE CONTEXT OF YOUR FINAL PROJECT DATA:
+
+## Data Import and Merging
+
+```{r}
+library(tidyverse)
+library(ggpubr)
+library(cluster)
+library(factoextra)
+library(interactions)
+library(sandwich)
+```
+```{r}
+Chicago_census <- read.csv(url("https://datahub.cmap.illinois.gov/dataset/1d2dd970-f0a6-4736-96a1-3caeb431f5e4/resource/8c4e096e-c90c-4bef-9cf1-9028d094296e/download/ReferenceCCAProfiles20142018.csv"))
+
+Chicago_socionomic <- read.csv(url("https://data.cityofchicago.org/api/views/kn9c-c2s2/rows.csv"))
+
+Chicago_schools <- read.csv(url("https://data.cityofchicago.org/api/views/9xs2-f89t/rows.csv"))
+
+Chicago_combined <- Chicago_socionomic %>%
+  rename(GEOG = "COMMUNITY.AREA.NAME") %>%
+  left_join(Chicago_census, by = "GEOG")
+```
+
+# Perform T-test
+```{r}
+ttest <- Chicago_combined %>%
+  filter(WHITE > 0) %>%
+  filter(TOT_POP > 0) %>%
+  mutate(white_pct = WHITE/TOT_POP) %>%
+  mutate(is_less_average = ifelse(white_pct < mean(white_pct), "Less than average", "Greater than average")) %>%
+  select(is_less_average, everything())
+
+
+a <- ggplot(data = ttest, mapping = aes(x = is_less_average, y = MEDINC)) +
+  geom_boxplot() 
+a + stat_compare_means()
+a + stat_compare_means(method = "t.test")
+```
+(INCLUDE VISUALIZATION)
+DESCRIBE OUTPUT: There is a statistically significant difference between median income of neighborhoods and the percentage of white citizens in neighborhoods. 
+
+# Perform ANOVA(How does ethnicity affect safety?)
+```{r}
+anova_alt_data_raw <- Chicago_schools %>%
+  select(c( "Community.Area.Name","Safety.Score")) %>%
+  transmute(GEOG = Community.Area.Name, Safety_Score = Safety.Score) %>%
+  filter(!(Safety_Score == "NDA")) %>%
+  group_by(GEOG) %>%
+  summarise(Mean = mean(Safety_Score), n=n()) %>%
+  select(c("GEOG", "Mean"))
+
+anova_alt_dataa <- Chicago_combined %>%
+  select(c("TOT_POP", "WHITE", "GEOG"))
+
+anova_alt_data <- toupper(anova_alt_dataa$GEOG)
+
+ anova_test_data1 <- cbind(anova_alt_dataa, anova_alt_data)
+ anova_test_data <- anova_test_data1 %>%
+   transmute(TOT_POP = TOT_POP, WHITE = WHITE, GEOG = anova_alt_data) %>%
+   left_join(anova_alt_data_raw, by ="GEOG") %>%
+   transmute(GEOG = GEOG, WHITE_percent = round(100*(WHITE / TOT_POP)), Safety = round(Mean, 1)) %>%
+   drop_na()
+ 
+anova_test_data2 <- cut(anova_test_data$Safety, breaks = c(0, 100/3, 200/3, 100),
+                  labels = c("Dangerous", "Moderate", "Safe"))
+anova_test_data3 <- cbind(anova_test_data, anova_test_data2)
+anova_test_data4 <- anova_test_data3 %>%
+  transmute(GEOG = GEOG, White = WHITE_percent, Safety_Score = anova_test_data2)
+
+
+ggboxplot(anova_test_data4, x = "Safety_Score", y = "White",
+          color = "Safety_Score", palette = "jco")+
+  stat_compare_means()
+# Change method to anova
+ggboxplot(anova_test_data4, x = "Safety_Score", y = "White",
+          color = "Safety_Score", palette = "jco")+
+  stat_compare_means(method = "anova")
+
+```
+
+
+(INCLUDE VISUALIZATION) ]
+DESCRIBE OUTPUT: There is a statistically significant difference between the white percentage in neighborhoods that are considered dangerous, moderate, or safe. The anova test suggests that the neighborhoods with high white percentages are safer due to historical systems. 
+
+# Perform Multiple Regression (please try interaction terms, if possible.)
+
+```{r} 
+Q2 <- Chicago_combined %>%
+  select(c("PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA", 
+           "GEOG", "PER.CAPITA.INCOME", "TOT_POP", "WHITE")) %>%
+  mutate(Percent_Minorities = ((TOT_POP - WHITE)/TOT_POP) * 100,
+         Income = PER.CAPITA.INCOME,
+         Education = PERCENT.AGED.25..WITHOUT.HIGH.SCHOOL.DIPLOMA)
+
+lm_1 = lm(Income ~ Percent_Minorities * Education, data = Q2)
+summary(lm_1)
+sim_slopes(lm_1, pred = Percent_Minorities, modx = Education, johnson_neyman =  FALSE)
+johnson_neyman(lm_1, pred = Percent_Minorities, modx = Education, alpha = .05)
+interact_plot(lm_1, pred = Percent_Minorities, modx = Education, plot.points = TRUE)
+```
+(INCLUDE VISUALIZATION) 
+DESCRIBE OUTPUT: There is a statistically significant relationship between the Income and the Percent of Minorities in a Neighborhood + Percent of Education Level in that Neighborhood (% which completed high school). However, the Simple Slopes Analysis shows that the relationship between Education Level and Percent of Minorities in a neighborhood are not statistically significant within +- 1 standard deviation to each other. Additionally, the large range between the Slopes of Percent_Minorities and large Johnoson-Neyman interval indicates a weak/non-statistically significant relation between the education level and the number of minorities in a neighborhood. 
+
+# Perform Classification or Clustering (e.g., SVM, Decision Tree, K-Means Clustering)
+```{r}
+# Number on graph is based on the order of the observation/neighborhood in Chicago-combined
+D <- Chicago_combined %>%
+  select(MEDINC, HARDSHIP.INDEX) %>%
+  na.omit()
+
+D1 <- scale(D)
+
+D2 <- kmeans(D1, centers = 4, nstart = 50)
+
+
+fviz_cluster(D2, data = D)
+```
+
+(INCLUDE VISUALIZATION)
+DESCRIBE OUTPUT:  There seems to be a strong negative correlation between hardship index and median income. There also seems to be few, if any, outliers that contradict the relationship otherwise, and the observations appear to be clustered closely around 4 centers.
+
